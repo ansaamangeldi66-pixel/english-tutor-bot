@@ -1,0 +1,35 @@
+import os
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
+import openai
+
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+OPENAI_KEY = os.getenv("OPENAI_API_KEY")
+
+openai.api_key = OPENAI_KEY
+
+async def start(update: Update, context):
+    await update.message.reply_text(
+        "Hello! I am your English tutor bot. Ask me anything!"
+    )
+
+async def handle_message(update: Update, context):
+    user_text = update.message.text
+
+    response = openai.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are an expert English teacher."},
+            {"role": "user", "content": user_text}
+        ]
+    )
+
+    answer = response.choices[0].message["content"]
+    await update.message.reply_text(answer)
+
+app = ApplicationBuilder().token(TOKEN).build()
+app.add_handler(CommandHandler("start", start))
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+if __name__ == "__main__":
+    app.run_polling()
